@@ -76,3 +76,78 @@ export async function getAccount(accountId: string) {
 	await connection.$pool.end();
 	return account;
 }
+
+export type Ride = {
+	id: string,
+	passengerId: string,
+	riderId: string,
+	status: string,
+	fare?: number,
+	distance: number,
+	fromLat: number,
+	fromLong: number,
+	toLat: number,
+	toLong: number,
+	date: Date
+}
+
+export type Coordinate = {
+	lat: number,
+	long: number
+}
+
+export type Account = {
+	id: string,
+	name: string,
+	email: string,
+	cpf: string,
+	carPlate: string,
+	isPassenger: boolean,
+	isDriver: boolean
+}
+
+export async function getActiveRideByPassengerId(passengerId: string) {
+	const connection = pgp()("postgresql://postgres:postgrespw@localhost:5432/cccat14?schema=public");
+	const [ride] = await connection.query("SELECT * FROM ride WHERE passenger_id = $1 AND status <> $2", [passengerId, "COMPLETED"]);
+	await connection.$pool.end();
+	return ride;
+}
+
+export async function getRide(rideId: string): Promise<any> {
+	const connection = pgp()("postgresql://postgres:postgrespw@localhost:5432/cccat14?schema=public");
+	const [ride] = await connection.query("SELECT * FROM ride WHERE ride_id = $1", [rideId]);
+	await connection.$pool.end();
+	return ride;
+}
+
+export async function requestRide(passengerId: string, from: Coordinate, to: Coordinate): Promise<any> {
+	const connection = pgp()("postgresql://postgres:postgrespw@localhost:5432/cccat14?schema=public");
+	try {
+		const passengerId = crypto.randomUUID();
+		const account: any = getAccount(passengerId);
+		if (!account) throw new Error("Account not found");
+		if (account.isPassenger === false) throw new Error("User is not a passenger");
+
+		const ride = await getActiveRideByPassengerId(passengerId);
+		if (ride) throw new Error("Passenger already has an active ride")
+
+	} finally {
+		await connection.$pool.end();
+	}
+
+	const ride: Ride = {
+		id: crypto.randomUUID(),
+		passengerId: passengerId,
+		riderId: crypto.randomUUID(),
+		status: "REQUESTED",
+		fare: undefined,
+		distance: Math.random(),
+		fromLat: from.lat,
+		fromLong: from.long,
+		toLat: to.lat,
+		toLong: to.long,
+		date: new Date()
+	}
+
+	return ride.id;
+}

@@ -1,4 +1,4 @@
-import { getAccount, signup } from "../src/main";
+import { getAccount, requestRide, signup } from "../src/main";
 
 test.each([
 	"97456321558",
@@ -115,4 +115,60 @@ test("Não deve criar uma conta para o motorista com a placa inválida", async f
 	};
 	// when
 	await expect(() => signup(inputSignup)).rejects.toThrow(new Error("Invalid car plate"));
+});
+
+test("Deve retornar uma corrida", async function () {
+	//given
+	const inputRequestRide = {
+		passengerId: "0347d9fc-81c7-11ee-b962-0242ac120002",
+		from: {
+			lat: 90,
+			long: 40
+		},
+		to: {
+			lat: -30,
+			long: 80
+		}
+	}
+	//when
+	const rideId = await requestRide(inputRequestRide.passengerId, inputRequestRide.from, inputRequestRide.to);
+
+	//then	
+	expect(rideId).toBeDefined();
+});
+
+test("Não deve retornar uma corrida se usuário não possuir cadastro", async function () {
+	//given
+	const inputRequestRide = {
+		passengerId: "0347dba0-81c7-11ee-b962-0242ac120002",
+		from: {
+			lat: 90,
+			long: 40
+		},
+		to: {
+			lat: -30,
+			long: 80
+		}
+	}
+	//then
+	//await requestRide(inputRequestRide.passengerId, inputRequestRide.from, inputRequestRide.to);
+	await expect(() => requestRide(inputRequestRide.passengerId, inputRequestRide.from, inputRequestRide.to)).rejects.toThrow(new Error("Account not found"));
+});
+
+test("Não deve retornar uma corrida se usuário não for passageiro", async function () {
+	//given
+	const inputRequestRide = {
+		passengerId: "0347d358-81c7-11ee-b962-0242ac120002",
+		from: {
+			lat: 90,
+			long: 40
+		},
+		to: {
+			lat: -30,
+			long: 80
+		}
+	}
+	//then
+	await requestRide(inputRequestRide.passengerId, inputRequestRide.from, inputRequestRide.to);
+	await expect(() => requestRide(inputRequestRide.passengerId, inputRequestRide.from, inputRequestRide.to)).rejects.toThrow(new Error("User is not a passenger"));
 });
